@@ -1,0 +1,14 @@
+GrimDroid references architectural concepts and lessons learned from:
+
+- youlong-security (https://github.com/iill392/youlong-security)
+  Licensed under AGPL-3.0.
+
+  Referenced concepts (no source code copied):
+  * Sentinel process mutual-watchdog pattern
+  * Volume key listener auto-recovery strategy
+  * Overlay permission loss fallback design
+
+  IMPORTANT: No source code from youlong-security is included in this
+  project. GrimDroid is licensed under GPL-3.0-or-later, which is
+  incompatible with AGPL-3.0. Only publicly documented architectural
+  ideas have been referenced.

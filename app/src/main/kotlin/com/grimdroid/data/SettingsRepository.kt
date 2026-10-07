@@ -36,6 +36,8 @@ object SettingsRepository {
     private val AutoStartOnBoot = booleanPreferencesKey("auto_start_on_boot")
     private val OnboardingDone = booleanPreferencesKey("onboarding_done")
     private val StellarAuthorized = booleanPreferencesKey("stellar_authorized")
+    private val StrongModeEnabled = booleanPreferencesKey("strong_mode_enabled")
+    private val ChargeTriggerEnabled = booleanPreferencesKey("charge_trigger_enabled")
 
     /** 是否在开机后自动启动防护服务，默认关闭。 */
     fun autoStartOnBoot(context: Context): Flow<Boolean> =
@@ -70,6 +72,35 @@ object SettingsRepository {
     suspend fun setStellarAuthorized(context: Context, authorized: Boolean) {
         context.applicationContext.dataStore.edit { preferences ->
             preferences[StellarAuthorized] = authorized
+        }
+    }
+
+    /** 是否开启强力保护模式，默认关闭。 */
+    fun strongModeEnabled(context: Context): Flow<Boolean> =
+        context.applicationContext.dataStore.data.map { preferences ->
+            preferences[StrongModeEnabled] ?: false
+        }
+
+    suspend fun setStrongModeEnabled(context: Context, enabled: Boolean) {
+        context.applicationContext.dataStore.edit { preferences ->
+            preferences[StrongModeEnabled] = enabled
+        }
+    }
+
+    /**
+     * 充电触发清场开关，默认关闭。
+     *
+     * 该开关是一次性的：插电触发后会被 [setChargeTriggerEnabled] 立即复位为 false，
+     * 避免每次插电都清场。
+     */
+    fun chargeTriggerEnabled(context: Context): Flow<Boolean> =
+        context.applicationContext.dataStore.data.map { preferences ->
+            preferences[ChargeTriggerEnabled] ?: false
+        }
+
+    suspend fun setChargeTriggerEnabled(context: Context, enabled: Boolean) {
+        context.applicationContext.dataStore.edit { preferences ->
+            preferences[ChargeTriggerEnabled] = enabled
         }
     }
 }

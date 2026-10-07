@@ -19,6 +19,11 @@
 
 package com.grimdroid.ui
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -47,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -72,10 +78,20 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     // 开机自启持久化在 DataStore 中，默认关闭
     val autoStart by SettingsRepository.autoStartOnBoot(context).collectAsState(initial = false)
+    // 强力保护模式，默认关闭
+    val strongMode by SettingsRepository.strongModeEnabled(context).collectAsState(initial = false)
+    // 充电触发清场（一次性），默认关闭
+    val chargeTrigger by SettingsRepository.chargeTriggerEnabled(context).collectAsState(initial = false)
 
     var backgroundMonitor by rememberSaveable { mutableStateOf(true) }
     var blockNotifications by rememberSaveable { mutableStateOf(true) }
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
+
+    // 悬浮窗权限：返回设置页后重新检查一次
+    var overlayGranted by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    val overlayPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { overlayGranted = Settings.canDrawOverlays(context) }
 
     Scaffold(
         modifier = modifier,
@@ -104,6 +120,39 @@ fun SettingsScreen(
                 label = "拦截通知",
                 checked = blockNotifications,
                 onCheckedChange = { blockNotifications = it },
+            )
+            SettingSwitchRow(
+                label = "强力保护模式",
+                checked = strongMode,
+                onCheckedChange = { enabled ->
+                    scope.launch { SettingsRepository.setStrongModeEnabled(context, enabled) }
+                },
+            )
+            SettingSwitchRow(
+                label = "充电触发清场",
+                checked = chargeTrigger,
+                onCheckedChange = { enabled ->
+                    scope.launch { SettingsRepository.setChargeTriggerEnabled(context, enabled) }
+                },
+            )
+
+            ListItem(
+                headlineContent = { Text("悬浮窗权限") },
+                supportingContent = { Text(if (overlayGranted) "已授权" else "未授权") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .clickable {
+                        overlayPermissionLauncher.launch(
+                            Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:${context.packageName}"),
+                            ),
+                        )
+                    }
+                    .semantics {
+                        stateDescription = if (overlayGranted) "已授权" else "未授权"
+                    },
             )
 
             Spacer(modifier = Modifier.height(8.dp))

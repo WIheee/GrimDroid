@@ -9,6 +9,9 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 悬浮窗提醒 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <!-- Stellar 自定义权限声明 -->
     <permission
         android:name="com.grimdroid.permission.STELLAR"
@@ -38,6 +41,29 @@
             android:name=".service.GuardService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- ===== 悬浮窗提醒服务（普通 Service） ===== -->
+        <service
+            android:name=".service.AlertOverlayService"
+            android:exported="false" />
+
+        <!-- ===== 应用安装 / 更新接收器 ===== -->
+        <receiver
+            android:name=".receiver.PackageChangeReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ===== 紧急清场广播接收器 ===== -->
+        <receiver
+            android:name=".receiver.EmergencyReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <!-- ===== 开机自启接收器 ===== -->
         <receiver

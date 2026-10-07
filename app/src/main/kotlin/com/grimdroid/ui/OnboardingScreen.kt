@@ -25,6 +25,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -84,9 +85,10 @@ private const val TOTAL_STEPS = 3
 private enum class TaskStatus { Pending, Working, Done, Failed, Unavailable }
 
 /**
- * 新手引导（3 步）。
+ * 新手引导。
  *
- * Step 1 欢迎 → Step 2 Stellar 授权（必过，可跳过）→ Step 3 批量授权。
+ * Step 0 说明（系统设置提醒）→ Step 1 欢迎 → Step 2 Stellar 授权（必过，可跳过）
+ * → Step 3 批量授权。
  * [onFinish] 与 [onSkip] 都会把 onboarding_done 置为 true 并进入主界面；
  * 区别在于跳过时未获得 Stellar 授权，主界面会提示功能受限。
  */
@@ -100,11 +102,11 @@ fun OnboardingScreen(
     onSkip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var step by rememberSaveable { mutableIntStateOf(1) }
+    var step by rememberSaveable { mutableIntStateOf(0) }
 
     // 授权成功后自动从 Step 2 进入 Step 3
     LaunchedEffect(stellarAuthorized) {
-        if (stellarAuthorized && step < 3) {
+        if (stellarAuthorized && step == 2) {
             step = 3
         }
     }
@@ -118,10 +120,14 @@ fun OnboardingScreen(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            StepIndicator(current = step, total = TOTAL_STEPS)
-            Spacer(modifier = Modifier.height(32.dp))
+            // Step 0 为前置说明页，不显示步骤指示器
+            if (step >= 1) {
+                StepIndicator(current = step, total = TOTAL_STEPS)
+                Spacer(modifier = Modifier.height(32.dp))
+            }
 
             when (step) {
+                0 -> IntroStep(onContinue = { step = 1 })
                 1 -> WelcomeStep(onNext = { step = 2 })
                 2 -> StellarStep(
                     connected = stellarConnected,
@@ -163,6 +169,46 @@ private fun StepIndicator(current: Int, total: Int) {
                     ),
             )
         }
+    }
+}
+
+@Composable
+private fun IntroStep(onContinue: () -> Unit) {
+    val context = LocalContext.current
+
+    Text(
+        text = "先说清楚",
+        style = MaterialTheme.typography.headlineSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+        text = "有几个权限 App 自己搞不定，需要你手动去系统设置里开：\n" +
+            "1. 后台允许高耗电（不然会被系统冻住）\n" +
+            "2. 自启动（开不开看你自己喜好）\n\n" +
+            "这段只是提醒，你可以先去开好再回来。",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Start,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(modifier = Modifier.height(32.dp))
+    Button(
+        onClick = { openAppDetailsSettings(context) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+    ) {
+        Text("去设置")
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = onContinue,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+    ) {
+        Text("继续")
     }
 }
 
@@ -427,5 +473,17 @@ private fun openUrl(context: Context, url: String) {
         )
     } catch (_: Throwable) {
         // 没有可处理该链接的应用时静默忽略
+    }
+}
+
+private fun openAppDetailsSettings(context: Context) {
+    try {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", context.packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    } catch (_: Throwable) {
+        // 无法跳转时静默忽略
     }
 }
