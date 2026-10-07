@@ -75,6 +75,8 @@ dependencies {
     implementation 'com.github.roro2239:Stellar-API:latest.release'
     implementation "androidx.navigation:navigation-compose:2.8.5"
     implementation "androidx.compose.material:material-icons-extended:1.7.8"
+    implementation "androidx.work:work-runtime-ktx:2.10.0"
+    implementation "androidx.datastore:datastore-preferences:1.1.1"
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
 }

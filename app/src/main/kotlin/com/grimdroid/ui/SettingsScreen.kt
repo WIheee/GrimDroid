@@ -44,15 +44,20 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
+import com.grimdroid.data.SettingsRepository
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,7 +68,11 @@ fun SettingsScreen(
     cppReversed: String,
     modifier: Modifier = Modifier,
 ) {
-    var autoStart by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // 开机自启持久化在 DataStore 中，默认关闭
+    val autoStart by SettingsRepository.autoStartOnBoot(context).collectAsState(initial = false)
+
     var backgroundMonitor by rememberSaveable { mutableStateOf(true) }
     var blockNotifications by rememberSaveable { mutableStateOf(true) }
     var aboutExpanded by rememberSaveable { mutableStateOf(false) }
@@ -82,7 +91,9 @@ fun SettingsScreen(
             SettingSwitchRow(
                 label = "开机自启",
                 checked = autoStart,
-                onCheckedChange = { autoStart = it },
+                onCheckedChange = { enabled ->
+                    scope.launch { SettingsRepository.setAutoStartOnBoot(context, enabled) }
+                },
             )
             SettingSwitchRow(
                 label = "后台实时监控",

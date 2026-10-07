@@ -19,21 +19,33 @@
 
 package com.grimdroid.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -57,6 +69,8 @@ private enum class Destination(val route: String, val label: String, val icon: I
 @Composable
 fun MainScreen(
     stellarStatus: String,
+    stellarAuthorized: Boolean,
+    onRequestStellar: () -> Unit,
     cppGreeting: String,
     cppSum: String,
     cppReversed: String,
@@ -95,24 +109,66 @@ fun MainScreen(
             }
         },
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Destination.Security.route,
-            modifier = Modifier.padding(innerPadding),
+        Column(modifier = Modifier.padding(innerPadding)) {
+            if (!stellarAuthorized) {
+                StellarLimitedBanner(onRequestStellar = onRequestStellar)
+            }
+            NavHost(
+                navController = navController,
+                startDestination = Destination.Security.route,
+                modifier = Modifier.weight(1f),
+            ) {
+                composable(Destination.Security.route) {
+                    SecurityModeScreen()
+                }
+                composable(Destination.Scan.route) {
+                    ScanScreen()
+                }
+                composable(Destination.Settings.route) {
+                    SettingsScreen(
+                        stellarStatus = stellarStatus,
+                        cppGreeting = cppGreeting,
+                        cppSum = cppSum,
+                        cppReversed = cppReversed,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 未授权 Stellar 时提示功能受限，并提供快捷授权入口。 */
+@Composable
+private fun StellarLimitedBanner(onRequestStellar: () -> Unit) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            composable(Destination.Security.route) {
-                SecurityModeScreen()
-            }
-            composable(Destination.Scan.route) {
-                ScanScreen()
-            }
-            composable(Destination.Settings.route) {
-                SettingsScreen(
-                    stellarStatus = stellarStatus,
-                    cppGreeting = cppGreeting,
-                    cppSum = cppSum,
-                    cppReversed = cppReversed,
-                )
+            Icon(
+                imageVector = Icons.Default.Warning,
+                // 装饰性图标：相邻文本已表达含义
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "功能受限：未授权 Stellar",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onRequestStellar,
+                modifier = Modifier.heightIn(min = 48.dp),
+            ) {
+                Text("去授权")
             }
         }
     }

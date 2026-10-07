@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project("grimdroid")
 
-add_library(grimdroid SHARED native-lib.cpp)
+add_library(grimdroid SHARED native-lib.cpp guard.cpp)
 
 find_library(log-lib log)
 

@@ -4,6 +4,11 @@
     <!-- 你原有的前台服务权限，如果暂时不用可以删掉 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+    <!-- 保活相关权限 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Stellar 自定义权限声明 -->
     <permission
         android:name="com.grimdroid.permission.STELLAR"
@@ -27,6 +32,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- ===== 常驻防护服务 ===== -->
+        <service
+            android:name=".service.GuardService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- ===== 开机自启接收器 ===== -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <!-- ===== Stellar Provider 配置 ===== -->
         <provider
