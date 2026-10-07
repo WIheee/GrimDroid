@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with GrimDroid. If not, see <https://www.gnu.org/licenses/>.
  */
-
 package com.grimdroid
 
 import android.os.Bundle
@@ -37,43 +36,55 @@ import roro.stellar.Stellar
 
 class MainActivity : ComponentActivity() {
 
-    // Stellar 状态，用于 Compose 显示
+    // ===== 声明 C++ 函数 =====
+    external fun helloFromCpp(): String
+    external fun addFromCpp(a: Int, b: Int): Int
+    external fun reverseFromCpp(input: String): String
+
+    // Stellar 状态
     private var stellarStatus by mutableStateOf("Stellar 未连接")
 
-    // 服务连接监听
+    // C++ 调用结果
+    private var cppGreeting by mutableStateOf("(未加载)")
+    private var cppSum by mutableStateOf("(未计算)")
+    private var cppReversed by mutableStateOf("(未反转)")
+
+    // Stellar 服务连接监听
     private val binderReceivedListener = Stellar.OnBinderReceivedListener {
         Log.i("GrimDroid", "Stellar 服务已连接")
         stellarStatus = "Stellar 已连接"
-        // 服务已连接，请求权限（传入权限名 + requestCode）
         if (Stellar.pingBinder()) {
             Stellar.requestPermission("stellar", REQUEST_CODE)
         }
     }
 
-    // 服务断开监听
     private val binderDeadListener = Stellar.OnBinderDeadListener {
         Log.w("GrimDroid", "Stellar 服务已断开")
         stellarStatus = "Stellar 已断开"
     }
 
-    // 权限请求结果监听
     private val permissionResultListener =
-        Stellar.OnRequestPermissionResultListener { requestCode, allowed, onetime ->
+        Stellar.OnRequestPermissionResultListener { requestCode, allowed, _ ->
             if (requestCode == REQUEST_CODE) {
-                if (allowed) {
-                    Log.i("GrimDroid", "Stellar 权限已授予")
-                    stellarStatus = "权限已授予"
-                } else {
-                    Log.w("GrimDroid", "Stellar 权限被拒绝")
-                    stellarStatus = "权限被拒绝"
-                }
+                stellarStatus = if (allowed) "权限已授予" else "权限被拒绝"
             }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 注册 Stellar 监听器（Sticky 版本：若服务已连接则立即回调）
+        // ===== 调用 C++ =====
+        try {
+            cppGreeting = helloFromCpp()
+            cppSum = "${addFromCpp(3, 4)}"
+            cppReversed = reverseFromCpp("GrimDroid")
+            Log.i("GrimDroid", "C++ ok: $cppGreeting / $cppSum / $cppReversed")
+        } catch (t: Throwable) {
+            Log.e("GrimDroid", "C++ 调用失败", t)
+            cppGreeting = "调用失败: ${t.message}"
+        }
+
+        // ===== Stellar 监听注册 =====
         Stellar.addBinderReceivedListenerSticky(binderReceivedListener)
         Stellar.addBinderDeadListener(binderDeadListener)
         Stellar.addRequestPermissionResultListener(permissionResultListener)
@@ -82,9 +93,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             ComposeEmptyActivityTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    MainScreen(
                         stellarStatus = stellarStatus,
+                        cppGreeting = cppGreeting,
+                        cppSum = cppSum,
+                        cppReversed = cppReversed,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -94,7 +107,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // 注销监听器，避免内存泄漏
         Stellar.removeBinderReceivedListener(binderReceivedListener)
         Stellar.removeBinderDeadListener(binderDeadListener)
         Stellar.removeRequestPermissionResultListener(permissionResultListener)
@@ -102,26 +114,51 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val REQUEST_CODE = 1001
+
+        init {
+            System.loadLibrary("grimdroid")
+        }
     }
 }
 
 @Composable
-fun Greeting(name: String, stellarStatus: String, modifier: Modifier = Modifier) {
+fun MainScreen(
+    stellarStatus: String,
+    cppGreeting: String,
+    cppSum: String,
+    cppReversed: String,
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(text = "Hello $name!")
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Stellar 状态: $stellarStatus")
+        Text(text = "GrimDroid")
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(text = "Stellar: $stellarStatus")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(text = "C++ 问候: $cppGreeting")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "C++ 加法 3+4 = $cppSum")
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(text = "C++ 反转 GrimDroid = $cppReversed")
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun MainScreenPreview() {
     ComposeEmptyActivityTheme {
-        Greeting(name = "Android", stellarStatus = "Stellar 已连接")
+        MainScreen(
+            stellarStatus = "Stellar 已连接",
+            cppGreeting = "Hello from C++!",
+            cppSum = "7",
+            cppReversed = "diordmirG"
+        )
     }
 }

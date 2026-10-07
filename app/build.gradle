@@ -9,6 +9,7 @@ plugins {
 android {
     namespace 'com.grimdroid'
     compileSdk 36
+    ndkVersion "30.0.15729638"
 
     defaultConfig {
         applicationId 'com.grimdroid'
@@ -18,6 +19,17 @@ android {
         versionName '1.0'
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+            }
+        }
+
+        ndk {
+            // 只打包这两种 ABI，减少 APK 体积
+            abiFilters "arm64-v8a", "x86_64"
+        }
     }
 
     buildFeatures {
@@ -27,6 +39,20 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        jniLibs {
+            // 避免 Termux 环境下 llvm-strip 报错
+            keepDebugSymbols += "**/libandroidx.graphics.path.so"
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file("src/main/cpp/CMakeLists.txt")
+            version "4.1.2"
+        }
     }
 }
 
@@ -51,10 +77,11 @@ dependencies {
     debugImplementation libs.androidx.ui.test.manifest
 }
 
+// ===== 版权头配置 =====
 license {
     // 使用 rule() 方法，而不是 header 属性
     rule(rootProject.file("codeformat/HEADER"))
-    include("**/*.kt")
+    include("**/*.kt", "**/*.cpp", "**/*.h", "**/*.hpp")
     exclude("**/build/**")
 }
 
@@ -62,4 +89,9 @@ license {
 // Android 的 Kotlin 源码位于 src/**/kotlin（本项目没有 src/main/java），
 // 插件默认扫描不到，因此手动为其注册 check/apply 任务。
 // 这些任务会被全局的 checkLicenses / applyLicenses 自动聚合。
-license.registerTasks("android", fileTree("src") { include "**/*.kt" })
+license.registerTasks("android", fileTree("src") {
+    include "**/*.kt"
+    include "**/*.cpp"
+    include "**/*.h"
+    include "**/*.hpp"
+})
