@@ -23,14 +23,10 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.grimdroid.ui.MainScreen
 import com.grimdroid.ui.theme.ComposeEmptyActivityTheme
 import roro.stellar.Stellar
 
@@ -92,15 +88,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ComposeEmptyActivityTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    MainScreen(
-                        stellarStatus = stellarStatus,
-                        cppGreeting = cppGreeting,
-                        cppSum = cppSum,
-                        cppReversed = cppReversed,
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MainScreen(
+                    stellarStatus = stellarStatus,
+                    cppGreeting = cppGreeting,
+                    cppSum = cppSum,
+                    cppReversed = cppReversed,
+                )
             }
         }
     }
@@ -118,47 +111,5 @@ class MainActivity : ComponentActivity() {
         init {
             System.loadLibrary("grimdroid")
         }
-    }
-}
-
-@Composable
-fun MainScreen(
-    stellarStatus: String,
-    cppGreeting: String,
-    cppSum: String,
-    cppReversed: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = "GrimDroid")
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(text = "Stellar: $stellarStatus")
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(text = "C++ 问候: $cppGreeting")
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(text = "C++ 加法 3+4 = $cppSum")
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(text = "C++ 反转 GrimDroid = $cppReversed")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    ComposeEmptyActivityTheme {
-        MainScreen(
-            stellarStatus = "Stellar 已连接",
-            cppGreeting = "Hello from C++!",
-            cppSum = "7",
-            cppReversed = "diordmirG"
-        )
     }
 }
